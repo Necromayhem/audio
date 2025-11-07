@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import track2 from "./audio/Alcest - Sur l'océan couleur de fer.mp3";
 import track3 from "./audio/December's Fire - Nostalgia.mp3";
 import track1 from "./audio/None - A World, Dead and Gray.mp3";
@@ -7,6 +7,8 @@ import track1 from "./audio/None - A World, Dead and Gray.mp3";
 const audioElement = ref(null);
 const volume = ref(0.5);
 const currentTrackIndex = ref(0);
+const currentTime = ref(0);
+const duration = ref(0);
 
 const tracks = ref([
   {
@@ -64,7 +66,7 @@ const playSelectedTrack = async () => {
   try {
     await nextTick();
     if (audioElement.value) {
-      audioElement.value.load();
+      await audioElement.value.load();
       audioElement.value.volume = volume.value;
       await audioElement.value.play();
     }
@@ -73,11 +75,37 @@ const playSelectedTrack = async () => {
   }
 };
 
-watch(volume, newVolume => {
+const secondsToTime = (seconds) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+};
+
+const updateCurrentTime = () => {
+  if (audioElement.value) {
+    currentTime.value = audioElement.value.currentTime;
+  }
+};
+
+const updateDuration = () => {
+  if (audioElement.value) {
+    duration.value = audioElement.value.duration;
+  }
+};
+
+const formattedCurrentTime = computed(() => {
+  return secondsToTime(currentTime.value);
+});
+
+const formattedDuration = computed(() => {
+  return secondsToTime(duration.value);
+});
+
+watch(volume, (newVolume) => {
   if (audioElement.value) {
     audioElement.value.volume = newVolume;
   }
-})
+});
 
 onMounted(() => {
   audioElement.value.load();
@@ -86,14 +114,22 @@ onMounted(() => {
 
 <template>
   <div class="main"></div>
-  <audio ref="audioElement" :src="tracks[currentTrackIndex].url"></audio>
+  <audio
+    ref="audioElement"
+    :src="tracks[currentTrackIndex].url"
+    @timeupdate="updateCurrentTime"
+    @canplaythrough="updateDuration"
+  ></audio>
   <div class="controls">
     <button @click="play">PLAY</button>
     <button @click="pause">PAUSE</button>
     <button @click="stop">STOP</button>
-    <input type="range" min="0" max="1" step="0.01" v-model="volume" />
     <button @click="prevTrack">prev</button>
     <button @click="nextTrack">next</button>
+    <input type="range" min="0" max="1" step="0.01" v-model="volume" />
+    <span>{{ formattedCurrentTime }}</span>
+    <input type="range" min="0" max="" />
+    <span>{{ formattedDuration }}</span>
   </div>
   <div class="track-list">
     <li
