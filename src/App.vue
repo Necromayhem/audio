@@ -93,6 +93,12 @@ const updateDuration = () => {
   }
 };
 
+const seekAudio = () => {
+  if (audioElement.value) {
+    audioElement.value.currentTime = currentTime.value;
+  }
+}
+
 const formattedCurrentTime = computed(() => {
   return secondsToTime(currentTime.value);
 });
@@ -104,6 +110,14 @@ const formattedDuration = computed(() => {
 watch(volume, (newVolume) => {
   if (audioElement.value) {
     audioElement.value.volume = newVolume;
+  }
+});
+
+watch(currentTime, (newTime) => {
+  if (audioElement.value) {
+    if (Math.abs(audioElement.value.currentTime - newTime) > 0.1) {
+      audioElement.value.currentTime = newTime;
+    }
   }
 });
 
@@ -128,7 +142,7 @@ onMounted(() => {
     <button @click="nextTrack">next</button>
     <input type="range" min="0" max="1" step="0.01" v-model="volume" />
     <span>{{ formattedCurrentTime }}</span>
-    <input type="range" min="0" max="" />
+    <input type="range" min="0" :max="duration" step="1" v-model="currentTime" @input="seekAudio"/>
     <span>{{ formattedDuration }}</span>
   </div>
   <div class="track-list">
