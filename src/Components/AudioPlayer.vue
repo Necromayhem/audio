@@ -11,11 +11,11 @@ const isPlaying = ref(false);
 
 // картинки для обложек
 const defaultImages = [
-  "https://picsum.photos/300/300?random=1",
-  "https://picsum.photos/300/300?random=2",
-  "https://picsum.photos/300/300?random=3",
-  "https://picsum.photos/300/300?random=4",
-  "https://picsum.photos/300/300?random=5"
+  "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop",
+  "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=300&h=300&fit=crop",
+  "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop",
+  "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&h=300&fit=crop",
+  "https://images.unsplash.com/photo-1483412033650-1015ddeb83d1?w=300&h=300&fit=crop"
 ];
 
 const tracks = ref([
@@ -247,7 +247,7 @@ onMounted(() => {
     ></audio>
     
     <div class="player-container">
-      <div class="content">
+     <div class="content">
         <div class="cover">
           <img 
             :src="tracks[currentTrackIndex]?.img" 
