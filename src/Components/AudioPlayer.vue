@@ -1,11 +1,5 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import track2 from "../audio/Alcest - Sur l'océan couleur de fer.mp3";
-import track3 from "../audio/December's Fire - Nostalgia.mp3";
-import track1 from "../audio/None - A World, Dead and Gray.mp3";
-import img2 from "../img/Alcest_—_Écailles_de_Lune.jpg";
-import img1 from "../img/none.jfif";
-import img3 from "../img/R-2647127-1709751321-8277.jpg";
 
 const audioElement = ref(null);
 const volume = ref(0.5);
@@ -15,19 +9,19 @@ const duration = ref(0);
 
 const tracks = ref([
   {
-    url: track1,
+    url: "/audio/None - A World, Dead and Gray.mp3", 
     title: "None - A World, Dead and Gray",
-    img: img1,
+    img: "/img/none.jfif",
   },
   {
-    url: track2,
+    url: "/audio/Alcest - Sur l'océan couleur de fer.mp3",
     title: "Alcest - Sur l'océan couleur de fer",
-    img: img2,
+    img: "/img/Alcest_—_Écailles_de_Lune.jpg",
   },
   {
-    url: track3,
+    url: "/audio/December's Fire - Nostalgia.mp3",
     title: "December's Fire - Nostalgia",
-    img: img3,
+    img: "/img/R-2647127-1709751321-8277.jpg",
   },
 ]);
 
