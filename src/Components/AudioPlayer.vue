@@ -130,6 +130,7 @@ onMounted(() => {
       :src="tracks[currentTrackIndex].url"
       @timeupdate="updateCurrentTime"
       @canplaythrough="updateDuration"
+      @ended="nextTrack"
     ></audio>
     <div class="player-container">
       <div class="cover">
