@@ -247,12 +247,6 @@ onMounted(() => {
     ></audio>
     
     <div class="player-container">
-      <!-- Индикатор загрузки -->
-      <div v-if="isLoading" class="loading">
-        <div class="spinner"></div>
-        Загрузка трека...
-      </div>
-
       <div class="content">
         <div class="cover">
           <img 
