@@ -6,6 +6,8 @@ const volume = ref(0.5);
 const currentTrackIndex = ref(0);
 const currentTime = ref(0);
 const duration = ref(0);
+const isLoading = ref(false);
+const error = ref(null);
 
 const tracks = ref([
   {
@@ -27,25 +29,40 @@ const tracks = ref([
 
 const play = async () => {
   try {
+    if (!audioElement.value) return;
+    
     audioElement.value.volume = volume.value;
     await audioElement.value.play();
-  } catch (error) {
-    console.error("Ошибка воспроизведения: ", error);
+    error.value = null;
+  } catch (err) {
+    console.error("Ошибка воспроизведения: ", err);
+    error.value = "Ошибка воспроизведения: " + err.message;
   }
 };
 
 const pause = () => {
-  audioElement.value.pause();
+  if (audioElement.value) {
+    audioElement.value.pause();
+  }
 };
 
 const stop = () => {
-  audioElement.value.pause();
-  audioElement.value.currentTime = 0;
+  if (audioElement.value) {
+    audioElement.value.pause();
+    audioElement.value.currentTime = 0;
+    currentTime.value = 0;
+  }
 };
 
 const selectedTrack = async (index) => {
-  currentTrackIndex.value = index;
-  await playSelectedTrack();
+  if (index === currentTrackIndex.value && audioElement.value) {
+    // Если выбрали текущий трек, перезапускаем
+    audioElement.value.currentTime = 0;
+    await play();
+  } else {
+    currentTrackIndex.value = index;
+    await playSelectedTrack();
+  }
 };
 
 const nextTrack = async () => {
@@ -61,31 +78,75 @@ const prevTrack = async () => {
 
 const playSelectedTrack = async () => {
   try {
+    isLoading.value = true;
+    error.value = null;
+    
     await nextTick();
-    if (audioElement.value) {
-      await audioElement.value.load();
-      audioElement.value.volume = volume.value;
-      await audioElement.value.play();
+    
+    if (!audioElement.value) {
+      throw new Error("Audio element not found");
     }
-  } catch (error) {
-    console.error("Ошибка воспроизведения: ", error);
+
+    // Сбрасываем текущее время
+    currentTime.value = 0;
+    
+    // Даем время на обновление src
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Загружаем новый трек
+    audioElement.value.load();
+    audioElement.value.volume = volume.value;
+    
+    // Ждем пока аудио будет готово
+    await new Promise((resolve, reject) => {
+      if (!audioElement.value) return reject();
+      
+      const onCanPlay = () => {
+        audioElement.value.removeEventListener('canplay', onCanPlay);
+        resolve();
+      };
+      
+      const onError = () => {
+        audioElement.value.removeEventListener('error', onError);
+        reject(new Error("Failed to load audio"));
+      };
+      
+      audioElement.value.addEventListener('canplay', onCanPlay);
+      audioElement.value.addEventListener('error', onError);
+      
+      // Таймаут на случай если загрузка зависнет
+      setTimeout(() => {
+        audioElement.value.removeEventListener('canplay', onCanPlay);
+        audioElement.value.removeEventListener('error', onError);
+        reject(new Error("Audio loading timeout"));
+      }, 10000);
+    });
+    
+    await audioElement.value.play();
+    
+  } catch (err) {
+    console.error("Ошибка воспроизведения: ", err);
+    error.value = "Ошибка загрузки трека: " + err.message;
+  } finally {
+    isLoading.value = false;
   }
 };
 
 const secondsToTime = (seconds) => {
+  if (!seconds || isNaN(seconds)) return "0:00";
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
 const updateCurrentTime = () => {
-  if (audioElement.value) {
+  if (audioElement.value && !isNaN(audioElement.value.currentTime)) {
     currentTime.value = audioElement.value.currentTime;
   }
 };
 
 const updateDuration = () => {
-  if (audioElement.value) {
+  if (audioElement.value && !isNaN(audioElement.value.duration)) {
     duration.value = audioElement.value.duration;
   }
 };
@@ -110,16 +171,19 @@ watch(volume, (newVolume) => {
   }
 });
 
-watch(currentTime, (newTime) => {
-  if (audioElement.value) {
-    if (Math.abs(audioElement.value.currentTime - newTime) > 0.1) {
-      audioElement.value.currentTime = newTime;
-    }
-  }
-});
+// может вызывать рекурсию
+// watch(currentTime, (newTime) => {
+//   if (audioElement.value) {
+//     if (Math.abs(audioElement.value.currentTime - newTime) > 0.1) {
+//       audioElement.value.currentTime = newTime;
+//     }
+//   }
+// });
 
 onMounted(() => {
-  audioElement.value.load();
+  if (audioElement.value) {
+    audioElement.value.load();
+  }
 });
 </script>
 
