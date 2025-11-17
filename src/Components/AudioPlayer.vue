@@ -25,6 +25,7 @@ const defaultImages = [
   "https://images.unsplash.com/photo-1509335919466-c196457ea95a?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Njh8fG11c2ljfGVufDB8fDB8fHww",
   "https://plus.unsplash.com/premium_photo-1708194041705-74586903c3d3?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8ODl8fG11c2ljfGVufDB8fDB8fHww",
   "https://images.unsplash.com/photo-1509824227185-9c5a01ceba0d?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTI4fHxtdXNpY3xlbnwwfHwwfHx8MA%3D%3D",
+  "https://images.unsplash.com/photo-1763046287602-7f878927101f?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHw0fHx8ZW58MHx8fHx8",
 ];
 
 const tracks = ref([
@@ -99,6 +100,12 @@ const tracks = ref([
     title: "SoundHelix - Song 12",
     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3",
     img: defaultImages[11],
+  },
+      {
+    id: 13,
+    title: "SoundHelix - Song 13",
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3",
+    img: defaultImages[12],
   },
 ]);
 
