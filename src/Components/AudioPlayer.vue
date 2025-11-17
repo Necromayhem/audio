@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
 const audioElement = ref(null);
 const volume = ref(0.5);
@@ -8,6 +8,8 @@ const currentTime = ref(0);
 const duration = ref(0);
 const isLoading = ref(false);
 const isPlaying = ref(false);
+const buffered = ref([]);
+const bufferedProgress = ref(0);
 
 // картинки для обложек
 const defaultImages = [
@@ -15,7 +17,14 @@ const defaultImages = [
   "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=300&h=300&fit=crop",
   "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop",
   "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&h=300&fit=crop",
-  "https://images.unsplash.com/photo-1483412033650-1015ddeb83d1?w=300&h=300&fit=crop"
+  "https://images.unsplash.com/photo-1483412033650-1015ddeb83d1?w=300&h=300&fit=crop",
+  "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8bXVzaWN8ZW58MHx8MHx8fDA%3D",
+  "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8bXVzaWN8ZW58MHx8MHx8fDA%3D",
+  "https://plus.unsplash.com/premium_photo-1723291298782-20d65301568e?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NDV8fG11c2ljfGVufDB8fDB8fHww",
+  "https://plus.unsplash.com/premium_photo-1682125525374-fd0cfec8d845?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NjF8fG11c2ljfGVufDB8fDB8fHww",
+  "https://images.unsplash.com/photo-1509335919466-c196457ea95a?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Njh8fG11c2ljfGVufDB8fDB8fHww",
+  "https://plus.unsplash.com/premium_photo-1708194041705-74586903c3d3?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8ODl8fG11c2ljfGVufDB8fDB8fHww",
+  "https://images.unsplash.com/photo-1509824227185-9c5a01ceba0d?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTI4fHxtdXNpY3xlbnwwfHwwfHx8MA%3D%3D",
 ];
 
 const tracks = ref([
@@ -48,7 +57,49 @@ const tracks = ref([
     title: "SoundHelix - Song 5",
     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
     img: defaultImages[4],
-  }
+  },
+    {
+    id: 6,
+    title: "SoundHelix - Song 6",
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+    img: defaultImages[5],
+  },
+    {
+    id: 7,
+    title: "SoundHelix - Song 7",
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+    img: defaultImages[6],
+  },
+    {
+    id: 8,
+    title: "SoundHelix - Song 8",
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+    img: defaultImages[7],
+  },
+    {
+    id: 9,
+    title: "SoundHelix - Song 9",
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
+    img: defaultImages[8],
+  },
+    {
+    id: 10,
+    title: "SoundHelix - Song 10",
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
+    img: defaultImages[9],
+  },
+    {
+    id: 11,
+    title: "SoundHelix - Song 11",
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3",
+    img: defaultImages[10],
+  },
+    {
+    id: 12,
+    title: "SoundHelix - Song 12",
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3",
+    img: defaultImages[11],
+  },
 ]);
 
 // функция воспроизведения
@@ -107,7 +158,7 @@ const prevTrack = async () => {
   await playSelectedTrack();
 };
 
-// Исправленная функция загрузки и воспроизведения трека
+// функция загрузки и воспроизведения трека
 const playSelectedTrack = async () => {
   if (!audioElement.value) return;
   
@@ -128,10 +179,12 @@ const playSelectedTrack = async () => {
     await new Promise((resolve, reject) => {
       const onCanPlay = () => {
         audioElement.value.removeEventListener('canplay', onCanPlay);
+        audioElement.value.removeEventListener('error', onError);
         resolve();
       };
       
       const onError = (error) => {
+        audioElement.value.removeEventListener('canplay', onCanPlay);
         audioElement.value.removeEventListener('error', onError);
         reject(error);
       };
@@ -139,12 +192,12 @@ const playSelectedTrack = async () => {
       audioElement.value.addEventListener('canplay', onCanPlay);
       audioElement.value.addEventListener('error', onError);
       
-      // Таймаут на случай если трек не загрузится
+      // Уменьшаем таймаут до 3 секунд
       setTimeout(() => {
         audioElement.value.removeEventListener('canplay', onCanPlay);
         audioElement.value.removeEventListener('error', onError);
         reject(new Error('Timeout loading track'));
-      }, 10000);
+      }, 3000);
     });
     
     // Воспроизводим трек
@@ -158,6 +211,10 @@ const playSelectedTrack = async () => {
     // Если ошибка связана с автоплейем, просто загружаем трек
     if (error.name === 'NotAllowedError') {
       console.log('Автовоспроизведение заблокировано. Нажмите PLAY для начала воспроизведения.');
+    } else if (error.message === 'Timeout loading track') {
+      console.log('Таймаут загрузки трека. Продолжаем загрузку в фоне...');
+      // Не прерываем полностью, позволяем продолжить загрузку
+      isLoading.value = true;
     }
   }
 };
@@ -181,6 +238,29 @@ const updateDuration = () => {
   }
 };
 
+// Функция обновления буферизации
+const updateBuffered = () => {
+  if (audioElement.value && audioElement.value.duration) {
+    const bufferedRanges = [];
+    for (let i = 0; i < audioElement.value.buffered.length; i++) {
+      bufferedRanges.push({
+        start: audioElement.value.buffered.start(i),
+        end: audioElement.value.buffered.end(i)
+      });
+    }
+    buffered.value = bufferedRanges;
+    
+    // Вычисляем прогресс буферизации
+    if (duration.value && bufferedRanges.length > 0) {
+      // Берем последний буферизованный сегмент (обычно самый актуальный)
+      const lastBuffered = bufferedRanges[bufferedRanges.length - 1];
+      bufferedProgress.value = (lastBuffered.end / duration.value) * 100;
+    } else {
+      bufferedProgress.value = 0;
+    }
+  }
+};
+
 const seekAudio = () => {
   if (audioElement.value) {
     audioElement.value.currentTime = currentTime.value;
@@ -195,6 +275,23 @@ const formattedDuration = computed(() => {
   return secondsToTime(duration.value);
 });
 
+// Интервал для постоянного обновления буферизации
+let bufferedInterval = null;
+
+const startBufferedUpdates = () => {
+  if (bufferedInterval) {
+    clearInterval(bufferedInterval);
+  }
+  bufferedInterval = setInterval(updateBuffered, 300); // Увеличили частоту обновлений
+};
+
+const stopBufferedUpdates = () => {
+  if (bufferedInterval) {
+    clearInterval(bufferedInterval);
+    bufferedInterval = null;
+  }
+};
+
 // Обработчик окончания трека
 const onTrackEnded = () => {
   isPlaying.value = false;
@@ -204,11 +301,34 @@ const onTrackEnded = () => {
 // Обработчик начала загрузки трека
 const onTrackLoadStart = () => {
   isLoading.value = true;
+  startBufferedUpdates();
 };
 
 // Обработчик окончания загрузки трека
 const onTrackLoaded = () => {
   isLoading.value = false;
+  updateBuffered(); // Финальное обновление
+};
+
+// Обработчик прогресса загрузки
+const onProgress = () => {
+  updateBuffered();
+};
+
+// Обработчик когда трек готов к воспроизведению
+const onCanPlay = () => {
+  updateBuffered();
+};
+
+// Предзагрузка следующего трека
+const preloadNextTrack = () => {
+  const nextIndex = (currentTrackIndex.value + 1) % tracks.value.length;
+  const nextTrack = tracks.value[nextIndex];
+  if (nextTrack) {
+    const preloadAudio = new Audio();
+    preloadAudio.src = nextTrack.url;
+    preloadAudio.preload = 'metadata';
+  }
 };
 
 watch(volume, (newVolume) => {
@@ -225,11 +345,27 @@ watch(currentTime, (newTime) => {
   }
 });
 
+// Следим за сменой трека для обновления буферизации
+watch(currentTrackIndex, () => {
+  // Сбрасываем прогресс при смене трека
+  bufferedProgress.value = 0;
+  updateBuffered();
+  // Предзагружаем следующий трек
+  preloadNextTrack();
+});
+
 onMounted(() => {
   // Предзагрузка первого трека
   if (audioElement.value) {
     audioElement.value.load();
+    startBufferedUpdates();
+    // Предзагружаем следующий трек
+    preloadNextTrack();
   }
+});
+
+onUnmounted(() => {
+  stopBufferedUpdates();
 });
 </script>
 
@@ -243,7 +379,9 @@ onMounted(() => {
       @ended="onTrackEnded"
       @loadstart="onTrackLoadStart"
       @loadeddata="onTrackLoaded"
-      preload="metadata"
+      @progress="onProgress"
+      @canplay="onCanPlay"
+      preload="auto"
     ></audio>
     
     <div class="player-container">
@@ -261,6 +399,7 @@ onMounted(() => {
           <div class="track-status">
             {{ isPlaying ? 'Воспроизведение' : 'Пауза' }} • 
             {{ currentTrackIndex + 1 }} из {{ tracks.length }}
+            <span v-if="isLoading" class="loading-indicator"> • Загрузка...</span>
           </div>
         </div>
         
@@ -291,17 +430,21 @@ onMounted(() => {
           <span class="volume-percentage">{{ Math.round(volume * 100) }}%</span>
         </div>
         
-        <div class="duration">
+        <div class="duration-container">
           <span class="time">{{ formattedCurrentTime }}</span>
-          <input 
-            type="range" 
-            min="0" 
-            :max="duration || 0" 
-            step="1" 
-            v-model="currentTime" 
-            @input="seekAudio"
-            :disabled="!duration"
-          />
+          <div class="progress-bar">
+            <div class="buffered-bar" :style="{ width: bufferedProgress + '%' }"></div>
+            <input 
+              type="range" 
+              min="0" 
+              :max="duration || 0" 
+              step="1" 
+              v-model="currentTime" 
+              @input="seekAudio"
+              :disabled="!duration"
+              class="progress-input"
+            />
+          </div>
           <span class="time">{{ formattedDuration }}</span>
         </div>
         
@@ -349,28 +492,15 @@ onMounted(() => {
   border: 1px solid #333;
 }
 
-.loading {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.loading-indicator {
   color: #1DB954;
-  font-size: 16px;
-  font-weight: bold;
-  padding: 20px;
+  font-size: 12px;
+  animation: pulse 1.5s infinite;
 }
 
-.spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #333;
-  border-top: 2px solid #1DB954;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .content {
@@ -475,6 +605,34 @@ onMounted(() => {
 
 .volume-control input {
   flex: 1;
+  -webkit-appearance: none;
+  background: #555;
+  border-radius: 5px;
+  cursor: pointer;
+  height: 6px;
+}
+
+.volume-control input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  background: #1DB954;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.volume-control input::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.volume-control input::-moz-range-thumb {
+  background: #1DB954;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
 }
 
 .volume-percentage {
@@ -483,23 +641,75 @@ onMounted(() => {
   min-width: 40px;
 }
 
-.duration {
+.duration-container {
   display: flex;
   align-items: center;
   gap: 15px;
   width: 100%;
-  
-  .time {
-    color: white;
-    font-size: 14px;
-    min-width: 45px;
-    font-variant-numeric: tabular-nums;
-  }
+  position: relative;
 }
 
-.duration input {
+.progress-bar {
+  position: relative;
   flex: 1;
+  height: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.buffered-bar {
+  position: absolute;
   height: 6px;
+  background: #555;
+  border-radius: 5px;
+  z-index: 1;
+  transition: width 0.3s ease;
+}
+
+.progress-input {
+  position: absolute;
+  width: 100%;
+  height: 6px;
+  z-index: 2;
+  -webkit-appearance: none;
+  background: transparent;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.progress-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.progress-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  background: #1DB954;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.progress-input::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.progress-input::-moz-range-thumb {
+  background: #1DB954;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+
+.time {
+  color: white;
+  font-size: 14px;
+  min-width: 45px;
+  font-variant-numeric: tabular-nums;
 }
 
 .track-list {
@@ -553,43 +763,6 @@ onMounted(() => {
 
 .track-item:last-child {
   border-bottom: none;
-}
-
-/* Стили для ползунков */
-input[type="range"] {
-  -webkit-appearance: none;
-  background: #555;
-  border-radius: 5px;
-  cursor: pointer;
-  height: 6px;
-}
-
-input[type="range"]:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  background: #1DB954;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-}
-
-input[type="range"]::-moz-range-thumb {
-  background: #1DB954;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: none;
-  cursor: pointer;
 }
 
 /* Скроллбар */
